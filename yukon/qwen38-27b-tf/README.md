@@ -47,3 +47,12 @@ Score = prefill_gain^0.25 × decode_gain^0.75. "pf" and "dec" below are local to
 - **Result:** small on its own (drafter lattice/top-k was ~97 µs of a 3.6 ms frame). Draft choices are unchanged:
   3×1024-token tapes identical to the base.
 - **Official:** part of my promoted entry `07fd50da` (1.63957).
+
+## 5. Two-tile prompt inputs for the mixer projections (`05-two-tile-prompt-inputs.patch`)
+- **Base:** submission `38c11ee6`.
+- **Change:** e-man07's generalised two/four-tile prompt kernel (`e6c09968`), merged with `38c11ee6`'s fp16-subnormal
+  unpack, applied to FFN down (TN2) and, my addition, to the 12288×5120 and 10240×5120 mixer input projections and
+  the unfused prompt gate/up. **This patch carries e-man07's kernel**; my part is the merge and the extra shapes.
+  TN4 on mixers or down was slower.
+- **Result:** prompt GPU 910.0 → 899.8 ms (prefill +0.95%), decode flat, est. +50–60 bps.
+- **Official:** promoted as `07fd50da`, 1.63957 (+76 bps over `38c11ee6`; prefill 1.196, decode 1.821).
