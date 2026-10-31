@@ -56,3 +56,12 @@ Score = prefill_gain^0.25 × decode_gain^0.75. "pf" and "dec" below are local to
   TN4 on mixers or down was slower.
 - **Result:** prompt GPU 910.0 → 899.8 ms (prefill +0.95%), decode flat, est. +50–60 bps.
 - **Official:** promoted as `07fd50da`, 1.63957 (+76 bps over `38c11ee6`; prefill 1.196, decode 1.821).
+
+## 6. Depth-one star GDN verify kernel (`06-gdn-star-verify.patch`)
+- **Base:** submission `7edba466`.
+- **Change:** `tf_delta_gdn_star`. With sibling drafts at depth 1, the verify tree is a star (row 0 from the root,
+  every other row a child of row 0). The kernel takes two adjacent value columns per simdgroup and runs independent
+  children two at a time, replacing the generic tree-slot path.
+- **Result:** 8-row verify 28.83 → 28.52 ms; local decode +0.05%. Bit-exact on 3×1024-token tapes.
+- **Not submitted.** ArthurOstapenko's `45f1b03b`, built independently on the same idea, scored +0.45% officially.
+  Lesson: local A/B noise (about ±0.3%) can hide a real gain.
