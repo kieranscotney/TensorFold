@@ -24,3 +24,11 @@ Score = prefill_gain^0.25 × decode_gain^0.75. "pf" and "dec" below are local to
 - **Result:** prefill 1028.5 → 1054.2 tok/s (+2.5%, every round), decode unchanged. Exact by construction.
   No codes in flight (LEAN0) loses 5.4% and two groups (LEAN2) gains nothing, so one group is optimal.
 - **Official:** in `ea8f8271` (1.37849). Carried, with credit, in leader `2c41feb1` (1.53945) and later leaders.
+
+## 2. Prompt-row SwiGLU in the gate/up epilogue (`02-prompt-row-swiglu.patch`)
+- **Base:** submission `e75967a0`.
+- **Change:** extends fkiene's decode-only `TF_SWIGLU` fused epilogue to prompt rows: 16-row blocks, split-K 1,
+  K range without split offsets, Y/HS row offsets. Same bf16 rounding of gate/up and the same `h` expression as
+  the unfused path, so results stay exact. The `quant_gpu.zig` hunk also carries the `prepareDecode` helper from #1734.
+- **Result:** prefill 1105.2 → 1128.5 tok/s (+2.1%); with the other pieces of `23d85725`, decode +1.2%.
+- **Official:** `23d85725` scored 1.52942. Carried, with credit, in leader `2c41feb1` (1.53945).
