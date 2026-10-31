@@ -39,3 +39,11 @@ Score = prefill_gain^0.25 × decode_gain^0.75. "pf" and "dec" below are local to
   1065-token prompt. `flush_rows = 1024` makes that one or two passes.
 - **Result:** decode window +0.15% (57.53 vs 57.44, 3 rounds). It also removes ~11 ms from the first draft round.
 - **Official:** `f3f8f654` scored 1.38132. Carried, with credit, in leader `2c41feb1`.
+
+## 4. Drafter top-k as a SIMD-shuffle tournament (`04-drafter-simd-topk.patch`)
+- **Base:** submission `38c11ee6`.
+- **Change:** `bf16_topk.metal` runs each rank's tournament inside a simdgroup with `simd_shuffle_xor`, then needs
+  only one threadgroup-memory step (one barrier) per rank across simdgroups, in place of the many barrier rounds before.
+- **Result:** small on its own (drafter lattice/top-k was ~97 µs of a 3.6 ms frame). Draft choices are unchanged:
+  3×1024-token tapes identical to the base.
+- **Official:** part of my promoted entry `07fd50da` (1.63957).
