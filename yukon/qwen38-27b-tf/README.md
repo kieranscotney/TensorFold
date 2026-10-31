@@ -32,3 +32,10 @@ Score = prefill_gain^0.25 × decode_gain^0.75. "pf" and "dec" below are local to
   the unfused path, so results stay exact. The `quant_gpu.zig` hunk also carries the `prepareDecode` helper from #1734.
 - **Result:** prefill 1105.2 → 1128.5 tok/s (+2.1%); with the other pieces of `23d85725`, decode +1.2%.
 - **Official:** `23d85725` scored 1.52942. Carried, with credit, in leader `2c41feb1` (1.53945).
+
+## 3. Drafter catches up on a prompt in 1024-row passes (`03-drafter-flush-1024.patch`)
+- **Base:** submission `5317b10e` (my stack on `ea8f8271`).
+- **Change:** the drafter absorbed the prompt's tap rows 128 at a time, which is nine frames and nine waits for a
+  1065-token prompt. `flush_rows = 1024` makes that one or two passes.
+- **Result:** decode window +0.15% (57.53 vs 57.44, 3 rounds). It also removes ~11 ms from the first draft round.
+- **Official:** `f3f8f654` scored 1.38132. Carried, with credit, in leader `2c41feb1`.
