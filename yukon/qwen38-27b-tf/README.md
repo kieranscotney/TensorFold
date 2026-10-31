@@ -16,3 +16,11 @@ Already upstream, not repeated here:
 Fuller write-up, measurements and dead ends: https://github.com/kieranscotney/mlxfast-qwen38-tf-work
 
 Score = prefill_gain^0.25 × decode_gain^0.75. "pf" and "dec" below are local tokens/s on an M5 Max, alternating A/B runs.
+
+## 1. Prompt projections take the lean prefetch (`01-prompt-lean.patch`)
+- **Base:** submission `2d06a685` plus the head pre-compile commit.
+- **Change:** `Key.lean` was `reg and !k.prompt`; it is now `reg`, so prompt-row reg projections use the codes-only
+  prefetch (`TF_REG_LEAN`, kshitij-hash) that decode already used. One group of codes in flight; metadata and sums per group.
+- **Result:** prefill 1028.5 → 1054.2 tok/s (+2.5%, every round), decode unchanged. Exact by construction.
+  No codes in flight (LEAN0) loses 5.4% and two groups (LEAN2) gains nothing, so one group is optimal.
+- **Official:** in `ea8f8271` (1.37849). Carried, with credit, in leader `2c41feb1` (1.53945) and later leaders.
