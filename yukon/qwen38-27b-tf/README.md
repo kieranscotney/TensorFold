@@ -65,3 +65,50 @@ Score = prefill_gain^0.25 × decode_gain^0.75. "pf" and "dec" below are local to
 - **Result:** 8-row verify 28.83 → 28.52 ms; local decode +0.05%. Bit-exact on 3×1024-token tapes.
 - **Not submitted.** ArthurOstapenko's `45f1b03b`, built independently on the same idea, scored +0.45% officially.
   Lesson: local A/B noise (about ±0.3%) can hide a real gain.
+
+## 7. Four-column prompt DeltaNet scan (`07-four-column-prompt-scan.patch`)
+- **Base:** submission `b490cd9f`.
+- **Change:** each lane of the prompt GDN scan carries four value columns instead of two, sharing the key and
+  query conversions.
+- **Official:** in `631553ae` (1.71545). Carried, with credit, in promoted `c1d09a0f` and every leader since.
+  terrapinelf later added running row offsets and reduce-scatter sums on top (`a8112696`, `c153ffc9`).
+
+## 8. Eight-part sparse decode attention prefixes (`08-eight-part-decode-prefix.patch`)
+- **Base:** `c153ffc9` / `292d7fda`.
+- **Change:** `q27_attn_prefix<1, 8>` replaces the quarter form on tensor-unit devices, so the verify's
+  full-attention prefixes split over twice as many SIMD groups. Same merge code, so exact.
+- **Result:** decode +0.12% (5 rounds). **Official:** in `da328474`, `bf5555a3`.
+
+## 9. Sibling floor 0.02, calibrated on independent prompts (`09-sibling-floor-0.02.patch`)
+- **Base:** `292d7fda`.
+- **Change:** a sibling the drafter rates under 2% is not verified. Calibration: drafter probability 0.02-0.05 lands
+  ~2.4% against a break-even of ~1.4-1.6% at ~0.19 ms per verified row.
+- **Result:** decode +0.10%. Tapes exact at every floor.
+
+## 10. Drafter MLP down projection on its 2-bit copy (`10-drafter-down-on-2-bits.patch`)
+- **Base:** `a5b756b6`.
+- **Change:** the drafter's 2-bit reg kernels run at the tensor units' rate (~1.48 T weights/s on M5 Max) while
+  its q4 down projections are bandwidth-bound, so down on the 2-bit copy shortens the drafter frame.
+- **Result:** local decode +0.61%. **Official:** `bf5555a3` scored 1.75523, about −1.4% against its base: the
+  acceptance cost on the official prompts outweighed the frame saving. Treat as negative.
+
+## 11. Siblings stop at 0.95 offered drafter mass (`11-sibling-mass-stop-0.95.patch`)
+- **Base:** `cb4d3130`.
+- **Change:** depth-one siblings are offered in rank order until their summed drafter probability reaches 0.95.
+- **Result:** verified rows 2198 → 2165 per 1024 tokens, decode +0.05% on `cb4d3130`; null on `22b390be`.
+
+## 12. Keep settle waits on its own shared event (`12-keep-event-settle.patch`)
+- **Base:** `cb4d3130` + 11.
+- **Change:** the keep command buffer signals a shared event; the settle spins on the event value instead of waiting
+  for the command buffer's completion (reported behind the drafter frame's). The failure check moves to the next settle.
+- **Result:** host gap before the next verify 93 → 86 µs a round. Exact.
+
+## 13. Two-state first round (`13-two-state-first-round.patch`)
+- **Base:** `cb4d3130` + 11. Carries the staging-queue plumbing from the append-overlap experiment.
+- **Change:** the drafter's catch-up on all prompt taps but the last 128 runs on a staging queue without waiting;
+  round 1 drafts from the last 128 rows; the next frame waits once for the staged rows' event.
+- **Result:** round 1 38.9 → 37.7 ms; no tokens lost (63/64 early landings unchanged). Only 1.2 of the staged 8 ms is
+  hidden: on M5 Max the verify keeps every core busy, so overlapped compute competes rather than fills gaps.
+
+Why the work stopped at a 1.79565 frontier, with the negative results and tools:
+https://github.com/kieranscotney/mlxfast-qwen38-tf-work/blob/main/notes/endgame-findings.md
